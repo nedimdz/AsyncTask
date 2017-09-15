@@ -18,28 +18,62 @@ public class MainActivity extends AppCompatActivity {
     private final static String BASE_URL = "http://api.wunderground.com/api/";
     private final static String API_KEY = "f55120b7c8f6307a";
 
+    private TextView countryNameTextView;
+    private TextView temperatureTextView;
+    private TextView pressureTextView;
+    private TextView humidityTextView;
+    private TextView weather;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        
-        //*************** TODO: MOVE THIS BLOCK OF CODE TO AN ASYNC_TASK**********
-        Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl(BASE_URL)
-                .addConverterFactory(GsonConverterFactory.create())
-                .build();
+        countryNameTextView = (TextView) findViewById(R.id.countryName);
+        temperatureTextView = (TextView) findViewById(R.id.temperature);
+        pressureTextView = (TextView) findViewById(R.id.pressure);
+        humidityTextView = (TextView) findViewById(R.id.humidity);
+        weather = (TextView) findViewById(R.id.weather);
 
-        WeatherInterface weatherInterface = retrofit.create(WeatherInterface.class);
-        Call<WeatherResponse> call = weatherInterface.getWeatherFromSanFrancisco(API_KEY);
-        WeatherResponse weatherResponse = null;
-        try {
-            weatherResponse = call.execute().body();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        //*************************************************************************
+        //Execute AsyncTask
+        new GetWetherInformation().execute();
     }
+
+    public class GetWetherInformation extends AsyncTask<Void, Void, WeatherResponse> {
+
+        @Override
+        protected WeatherResponse doInBackground(Void... voids) {
+            Retrofit retrofit = new Retrofit.Builder()
+                    .baseUrl(BASE_URL)
+                    .addConverterFactory(GsonConverterFactory.create())
+                    .build();
+
+            WeatherInterface weatherInterface = retrofit.create(WeatherInterface.class);
+            Call<WeatherResponse> call = weatherInterface.getWeatherFromSanFrancisco(API_KEY);
+            WeatherResponse weatherResponse = null;
+            try {
+                weatherResponse = call.execute().body();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            return weatherResponse;
+        }
+
+        @Override
+        protected void onPostExecute(WeatherResponse weatherResponse) {
+            super.onPostExecute(weatherResponse);
+
+            if(weatherResponse != null)
+            {
+                countryNameTextView.setText(weatherResponse.getWeatherData().getDisplayLocation().getCityName());
+                temperatureTextView.setText(weatherResponse.getWeatherData().getTemp());
+                weather.setText(weatherResponse.getWeatherData().getWeather());
+                pressureTextView.setText(weatherResponse.getWeatherData().getPressure().toString());
+                humidityTextView.setText(weatherResponse.getWeatherData().getHumidity());
+            }
+        }
+    }
+
 
 }
